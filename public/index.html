@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetTools Mobile - Network Diagnostic Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: #3498db;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .result {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2c3e50;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close-modal {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📡 NetTools Mobile</h1>
+            <p>Network Diagnostic Suite</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="ping">Ping</button>
+            <button class="tab-button" data-tab="dns">DNS Lookup</button>
+            <button class="tab-button" data-tab="port">Port Scanner</button>
+            <button class="tab-button" data-tab="traceroute">Traceroute</button>
+            <button class="tab-button" data-tab="public-ip">Public IP</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="latency">--</div>
+                <div class="stat-label">Avg Latency</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="packet-loss">--</div>
+                <div class="stat-label">Packet Loss</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="uptime">--</div>
+                <div class="stat-label">Connection Uptime</div>
+            </div>
+        </div>
+
+        <div id="ping-tab" class="tab-content active">
+            <div class="input-group">
+                <input type="text" id="ping-host" placeholder="Enter hostname or IP (e.g., google.com)">
+            </div>
+            <button onclick="pingHost()">Ping Host</button>
+            <div id="ping-result" class="result"></div>
+        </div>
+
+        <div id="dns-tab" class="tab-content">
+            <div class="input-group">
+                <select id="dns-type">
+                    <option value="a">A Record</option>
+                    <option value="aaaa">AAAA Record</option>
+                    <option value="mx">MX Record</option>
+                    <option value="ns">NS Record</option>
+                    <option value="txt">TXT Record</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <input type="text" id="dns-domain" placeholder="Enter domain (e.g., google.com)">
+            </div>
+            <button onclick="lookupDNS()">Lookup DNS</button>
+            <div id="dns-result" class="result"></div>
+        </div>
+
+        <div id="port-tab" class="tab-content">
+            <div class="input-group">
+                <input type="text" id="port-host" placeholder="Enter hostname or IP">
+            </div>
+            <button onclick="scanPorts()">Scan Common Ports</button>
+            <div id="port-result" class="result"></div>
+        </div>
+
+        <div id="traceroute-tab" class="tab-content">
+            <div class="input-group">
+                <input type="text" id="traceroute-host" placeholder="Enter hostname or IP">
+            </div>
+            <button onclick="doTraceroute()">Traceroute</button>
+            <div id="traceroute-result" class="result"></div>
+        </div>
+
+        <div id="public-ip-tab" class="tab-content">
+            <button onclick="getPublicIP()">Get Public IP Information</button>
+            <div id="public-ip-result" class="result"></div>
+        </div>
+
+        <button onclick="openAIAnalysis()" style="background: #9b59b6; margin-top: 20px;">AI Network Security Analysis</button>
+    </div>
+
+    <div id="ai-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal('ai-modal')">Close</button>
+            <h3>AI Network Security Analysis</h3>
+            <div id="ai-analysis-result" class="result"></div>
+        </div>
+    </div>
+
+    <div id="loading" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px;">Processing...</p>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
